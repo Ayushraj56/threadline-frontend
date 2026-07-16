@@ -40,6 +40,14 @@ function IconFile(props) {
   );
 }
 
+function IconArrowLeft(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" {...props}>
+      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function formatBytes(bytes) {
   if (!bytes) return "0 KB";
   const kb = bytes / 1024;
@@ -53,6 +61,7 @@ export default function ChatWindow({
   onLoadOlder,
   hasMoreOlder,
   loadingOlder,
+  onBack,
 }) {
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
@@ -162,31 +171,43 @@ export default function ChatWindow({
   }
 
   return (
-    <section className="flex h-full flex-1 flex-col bg-canvas">
-      <header className="flex items-center justify-between border-b border-line px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ink/[0.06] font-display text-[13px] font-medium text-ink">
+    <section className="flex h-full flex-1 flex-col bg-canvas min-w-0">
+      <header className="flex items-center justify-between border-b border-line px-4 py-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          {/* Back button: only shown on mobile (< md), returns to conversation list */}
+          <button
+            type="button"
+            onClick={onBack}
+            className="-ml-1 shrink-0 rounded-lg p-2 text-muted hover:bg-ink/[0.05] hover:text-ink md:hidden"
+            aria-label="Back to conversations"
+          >
+            <IconArrowLeft className="h-5 w-5" />
+          </button>
+
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink/[0.06] font-display text-[13px] font-medium text-ink">
             {conversation.initials}
           </div>
-          <div>
-            <p className="font-display text-[14px] font-semibold text-ink">
+          <div className="min-w-0">
+            <p className="truncate font-display text-[14px] font-semibold text-ink">
               {conversation.name}
             </p>
             <p className="flex items-center gap-1.5 text-[12px] text-muted">
               <span
-                className={`h-1.5 w-1.5 rounded-full ${
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                   conversation.online ? "bg-mint" : "bg-muted/50"
                 }`}
               />
-              {conversation.online ? "Online" : "Offline"} · {conversation.role}
+              <span className="truncate">
+                {conversation.online ? "Online" : "Offline"} · {conversation.role}
+              </span>
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 text-muted">
-          <button className="rounded-lg p-2 hover:bg-ink/[0.05] hover:text-ink">
+        <div className="flex shrink-0 items-center gap-1.5 text-muted">
+          <button className="hidden rounded-lg p-2 hover:bg-ink/[0.05] hover:text-ink sm:inline-flex">
             <IconPhone className="h-[18px] w-[18px]" />
           </button>
-          <button className="rounded-lg p-2 hover:bg-ink/[0.05] hover:text-ink">
+          <button className="hidden rounded-lg p-2 hover:bg-ink/[0.05] hover:text-ink sm:inline-flex">
             <IconVideo className="h-[18px] w-[18px]" />
           </button>
           <button className="rounded-lg p-2 hover:bg-ink/[0.05] hover:text-ink">
@@ -198,7 +219,7 @@ export default function ChatWindow({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="thin-scroll-light flex-1 space-y-3 overflow-y-auto px-6 py-6"
+        className="thin-scroll-light flex-1 space-y-3 overflow-y-auto px-4 py-6 sm:px-6"
       >
         {loadingOlder && (
           <p className="pb-2 text-center text-[11.5px] text-muted">
@@ -216,7 +237,7 @@ export default function ChatWindow({
         {typing && <TypingBubble />}
       </div>
 
-      <div className="border-t border-line px-6 py-4">
+      <div className="border-t border-line px-4 py-4 sm:px-6">
         {attachment && (
           <div className="mb-2 flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2">
             {attachment.isImage ? (
@@ -272,7 +293,7 @@ export default function ChatWindow({
             accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
             onChange={handleFileSelect}
           />
-          <button className="shrink-0 rounded-lg p-2 text-muted hover:bg-ink/[0.05] hover:text-ink">
+          <button className="hidden shrink-0 rounded-lg p-2 text-muted hover:bg-ink/[0.05] hover:text-ink sm:inline-flex">
             <IconSmile className="h-[18px] w-[18px]" />
           </button>
           <button

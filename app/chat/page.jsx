@@ -427,6 +427,10 @@ export default function ChatPage() {
     }
   }
 
+  function handleBack() {
+    setActiveId(null);
+  }
+
   if (loading) {
     return <main className="flex h-screen w-full items-center justify-center">Loading…</main>;
   }
@@ -441,23 +445,42 @@ export default function ChatPage() {
 
   return (
     <main className="flex h-screen w-full overflow-hidden">
-      <ConversationRail
-        conversations={filtered}
-        activeId={activeId}
-        onSelect={handleSelect}
-        query={query}
-        onQueryChange={setQuery}
-        currentUser={currentUser}
-        onNewChat={() => setShowNewChat(true)}
-        onLogout={handleLogout}
-      />
-      <ChatWindow
-        conversation={active}
-        onSendMessage={handleSendMessage}
-        onLoadOlder={() => active && loadOlderMessages(active.id)}
-        hasMoreOlder={active?.hasMoreOlder ?? false}
-        loadingOlder={active?.loadingOlder ?? false}
-      />
+      {/* Conversation list: full width on mobile when no chat is open,
+          fixed sidebar width on md+ screens always */}
+      <div
+        className={`${
+          activeId ? "hidden md:flex" : "flex"
+        } w-full md:w-80 lg:w-96 flex-shrink-0 h-full`}
+      >
+        <ConversationRail
+          conversations={filtered}
+          activeId={activeId}
+          onSelect={handleSelect}
+          query={query}
+          onQueryChange={setQuery}
+          currentUser={currentUser}
+          onNewChat={() => setShowNewChat(true)}
+          onLogout={handleLogout}
+        />
+      </div>
+
+      {/* Chat window: hidden on mobile until a chat is selected,
+          always visible on md+ screens */}
+      <div
+        className={`${
+          activeId ? "flex" : "hidden md:flex"
+        } flex-1 h-full min-w-0`}
+      >
+        <ChatWindow
+          conversation={active}
+          onSendMessage={handleSendMessage}
+          onLoadOlder={() => active && loadOlderMessages(active.id)}
+          hasMoreOlder={active?.hasMoreOlder ?? false}
+          loadingOlder={active?.loadingOlder ?? false}
+          onBack={handleBack}
+        />
+      </div>
+
       {showNewChat && (
         <NewChatModal
           onClose={() => setShowNewChat(false)}

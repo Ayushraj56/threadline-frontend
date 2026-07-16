@@ -26,7 +26,7 @@ export default function ConversationRail({
   onLogout,
 }) {
   return (
-    <aside className="flex h-full w-[320px] shrink-0 flex-col bg-rail">
+    <aside className="flex h-full w-full shrink-0 flex-col bg-rail">
       <div className="flex items-center gap-2 px-5 pb-4 pt-6">
         <div className="h-7 w-7 rounded-md bg-mint" />
         <span className="font-display text-[15px] font-semibold tracking-tight text-white">
