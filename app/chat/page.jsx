@@ -6,6 +6,7 @@ import ConversationRail from "@/components/ConversationRail";
 import ChatWindow from "@/components/ChatWindow";
 import NewChatModal from "@/components/NewChatModal";
 import { getSocket } from "@/lib/socket";
+import { authFetch, clearToken } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -19,9 +20,9 @@ function toConversation(chat) {
     unread: chat.unreadCount || 0,
     lastAt: chat.lastMessage?.at
       ? new Date(chat.lastMessage.at).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+          hour: "2-digit",
+          minute: "2-digit",
+        })
       : "",
     lastMessageText: chat.lastMessage?.text || "",
     participantIds: (chat.participantIds || []).map(String),
@@ -52,12 +53,16 @@ export default function ChatPage() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState(() => new Set());
 
+  // Lets the socket handler (registered once) know which chat is
+  // currently open, without needing activeId as a dependency.
+  const activeIdRef = useRef(activeId);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
   const loadProfile = useCallback(async (selectId) => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/profile`, {
-        method: "GET",
-        credentials: "include",
-      });
+      const res = await authFetch("/api/auth/profile");
 
       if (!res.ok) {
         throw new Error(
@@ -68,6 +73,8 @@ export default function ChatPage() {
       const data = await res.json();
       const mapped = (data.chats || []).map(toConversation);
 
+      // loadProfile can run repeatedly (poll), so don't clobber messages
+      // that loadMessages already fetched for the currently open chat.
       setConversations((prev) => {
         const prevById = Object.fromEntries(prev.map((c) => [c.id, c]));
         return mapped.map((c) => ({
@@ -113,15 +120,13 @@ export default function ChatPage() {
 
   async function handleLogout() {
     try {
-      await fetch(`${API_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
+      await authFetch("/api/auth/logout", { method: "POST" });
     } catch {
       // Even if the request fails, still clear local state and redirect —
       // there's nothing useful to do differently on the client either way.
     }
 
+    clearToken();
     getSocket().disconnect();
     router.push("/login");
   }
@@ -130,7 +135,8 @@ export default function ChatPage() {
   const toDisplayMessage = useCallback(
     (m) => ({
       id: m._id,
-      from: String(m.senderId) === String(currentUser?.id) ? "me" : "them",
+      from: String(m.senderId?._id || m.senderId) === String(currentUser?.id) ? "me" : "them",
+      senderName: m.senderId?.name || null,
       text: m.message,
       attachmentUrl: m.mediaUrl ? `${API_URL}${m.mediaUrl}` : null,
       attachmentName: m.fileName || null,
@@ -148,9 +154,7 @@ export default function ChatPage() {
   const loadMessages = useCallback(
     async (chatId) => {
       try {
-        const res = await fetch(`${API_URL}/api/chats/${chatId}/messages`, {
-          credentials: "include",
-        });
+        const res = await authFetch(`/api/chats/${chatId}/messages`);
         if (!res.ok) return;
 
         const data = await res.json();
@@ -192,10 +196,10 @@ export default function ChatPage() {
       );
 
       try {
-        const url = `${API_URL}/api/chats/${chatId}/messages?before=${encodeURIComponent(
+        const url = `/api/chats/${chatId}/messages?before=${encodeURIComponent(
           oldest.createdAt
         )}`;
-        const res = await fetch(url, { credentials: "include" });
+        const res = await authFetch(url);
         if (!res.ok) throw new Error("Failed to load older messages");
 
         const data = await res.json();
@@ -205,11 +209,11 @@ export default function ChatPage() {
           prev.map((c) =>
             c.id === chatId
               ? {
-                ...c,
-                messages: [...olderMessages, ...c.messages],
-                hasMoreOlder: !!data.hasMore,
-                loadingOlder: false,
-              }
+                  ...c,
+                  messages: [...olderMessages, ...c.messages],
+                  hasMoreOlder: !!data.hasMore,
+                  loadingOlder: false,
+                }
               : c
           )
         );
@@ -228,13 +232,6 @@ export default function ChatPage() {
   useEffect(() => {
     knownChatIdsRef.current = new Set(conversations.map((c) => c.id));
   }, [conversations]);
-
-  // Lets the socket handler (registered once) know which chat is
-  // currently open, without needing activeId as a dependency.
-  const activeIdRef = useRef(activeId);
-  useEffect(() => {
-    activeIdRef.current = activeId;
-  }, [activeId]);
 
   // Load the initial history once when a chat is opened. After that,
   // the socket's "newMessage" event keeps it live.
@@ -291,9 +288,7 @@ export default function ChatPage() {
       // tell the backend we've read it — otherwise the unread badge
       // would flash on before the next profile refresh clears it.
       if (chatId === activeIdRef.current) {
-        fetch(`${API_URL}/api/chats/${chatId}/messages`, {
-          credentials: "include",
-        }).catch(() => { });
+        authFetch(`/api/chats/${chatId}/messages`).catch(() => {});
       }
     }
 
@@ -386,16 +381,13 @@ export default function ChatPage() {
         formData.append("message", text);
         formData.append("media", attachment.file);
 
-        res = await fetch(`${API_URL}/api/chats/${id}/messages`, {
+        res = await authFetch(`/api/chats/${id}/messages`, {
           method: "POST",
-          credentials: "include",
-          body: formData, // no Content-Type header — the browser sets the multipart boundary itself
+          body: formData, // authFetch skips Content-Type for FormData automatically
         });
       } else {
-        res = await fetch(`${API_URL}/api/chats/${id}/messages`, {
+        res = await authFetch(`/api/chats/${id}/messages`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ message: text }),
         });
       }
@@ -424,11 +416,11 @@ export default function ChatPage() {
         prev.map((c) =>
           c.id === id
             ? {
-              ...c,
-              messages: c.messages.map((m) =>
-                m.id === tempId ? { ...m, status: "failed" } : m
-              ),
-            }
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === tempId ? { ...m, status: "failed" } : m
+                ),
+              }
             : c
         )
       );

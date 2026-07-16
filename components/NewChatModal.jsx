@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { authFetch } from "@/lib/api";
 
 export default function NewChatModal({ onClose, onChatCreated }) {
   const [mode, setMode] = useState("direct"); // "direct" | "group"
@@ -19,10 +18,7 @@ export default function NewChatModal({ onClose, onChatCreated }) {
     const timeout = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `${API_URL}/api/users?search=${encodeURIComponent(search)}`,
-          { credentials: "include" }
-        );
+        const res = await authFetch(`/api/users?search=${encodeURIComponent(search)}`);
         const data = await res.json();
         setUsers(data.users || []);
       } catch {
@@ -54,10 +50,8 @@ export default function NewChatModal({ onClose, onChatCreated }) {
   async function handlePickDirect(user) {
     setCreating(true);
     try {
-      const res = await fetch(`${API_URL}/api/chats`, {
+      const res = await authFetch("/api/chats", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ participantId: user._id }),
       });
 
@@ -84,10 +78,8 @@ export default function NewChatModal({ onClose, onChatCreated }) {
 
     setCreating(true);
     try {
-      const res = await fetch(`${API_URL}/api/chats/group`, {
+      const res = await authFetch("/api/chats/group", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           sessionName: groupName.trim(),
           participantIds: selectedUsers.map((u) => u._id),
