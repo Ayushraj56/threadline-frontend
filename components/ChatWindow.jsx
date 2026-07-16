@@ -193,9 +193,8 @@ export default function ChatWindow({
             </p>
             <p className="flex items-center gap-1.5 text-[12px] text-muted">
               <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  conversation.online ? "bg-mint" : "bg-muted/50"
-                }`}
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${conversation.online ? "bg-mint" : "bg-muted/50"
+                  }`}
               />
               <span className="truncate">
                 {conversation.online ? "Online" : "Offline"} · {conversation.role}
@@ -284,7 +283,7 @@ export default function ChatWindow({
             onKeyDown={handleKeyDown}
             placeholder="Write a message"
             rows={1}
-            className="max-h-28 flex-1 resize-none bg-transparent py-1.5 text-[13.5px] leading-relaxed text-ink placeholder:text-muted focus:outline-none"
+            className="max-h-28 flex-1 resize-none bg-transparent py-1.5 text-base leading-relaxed text-ink placeholder:text-muted focus:outline-none sm:text-[13.5px]"
           />
           <input
             ref={fileInputRef}

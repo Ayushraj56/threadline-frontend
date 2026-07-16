@@ -41,7 +41,7 @@ export default function ConversationRail({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search conversations"
-            className="w-full bg-transparent text-[13px] text-white/90 placeholder:text-white/35 focus:outline-none"
+            className="w-full bg-transparent text-base placeholder:text-white/35 text-white/90 focus:outline-none sm:text-[13px]"
           />
         </div>
       </div>
@@ -72,9 +72,8 @@ export default function ConversationRail({
             <button
               key={c.id}
               onClick={() => onSelect(c.id)}
-              className={`mb-1 flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                active ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
-              }`}
+              className={`mb-1 flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${active ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
+                }`}
             >
               <Avatar initials={c.initials} online={c.online} />
               <div className="min-w-0 flex-1">
